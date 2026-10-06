@@ -8,6 +8,10 @@ def create_tasks(
     evidence_agent,
     writer,
 ):
+    # ============================================================
+    # TASK 1: RESEARCH PLANNING
+    # ============================================================
+
     planning_task = Task(
         description="""
         Analyze the following research question:
@@ -27,8 +31,9 @@ def create_tasks(
         """,
         expected_output="""
         A structured research plan containing:
-        - Main research objectives
-        - Key subquestions
+
+        - Main research objective
+        - Key research questions
         - Important concepts
         - Web research directions
         - Academic research directions
@@ -37,34 +42,40 @@ def create_tasks(
         agent=planner,
     )
 
+    # ============================================================
+    # TASK 2: WEB RESEARCH
+    # ============================================================
+
     web_task = Task(
         description="""
-        Research the question below using the research plan produced
-        by the planner.
+        Conduct web research for the research question:
 
-        Research question:
         {research_question}
 
-        Research plan:
-        {planning_task}
+        Use the research plan provided through your task context.
 
-        Use your tools to find current and relevant web information.
+        Use your available research tools to find current and
+        relevant information.
 
         You MUST:
-        - search for relevant information
-        - inspect important sources
-        - record source URLs
-        - distinguish facts from opinions
-        - avoid unsupported claims
 
-        Return a source-oriented research report.
+        - Search for relevant information.
+        - Inspect important sources.
+        - Record source names.
+        - Record source URLs.
+        - Distinguish facts from opinions.
+        - Avoid unsupported claims.
+        - Prefer authoritative and recent sources.
+
+        Produce a source-oriented web research report.
         """,
         expected_output="""
-        Web research containing:
+        A web research report containing:
+
         - Major findings
         - Supporting evidence
-        - Important current developments
-        - Source names
+        - Current developments
+        - Important sources
         - Source URLs
         - Areas of uncertainty
         """,
@@ -72,79 +83,95 @@ def create_tasks(
         context=[planning_task],
     )
 
+    # ============================================================
+    # TASK 3: ACADEMIC RESEARCH
+    # ============================================================
+
     academic_task = Task(
         description="""
         Conduct academic research for:
 
         {research_question}
 
-        Research plan:
-        {planning_task}
-
-        Search OpenAlex, Crossref and arXiv.
+        Use the research plan provided through your task context.
 
         You MUST use your academic research tools.
 
-        Identify:
-        - relevant papers
-        - publication years
-        - authors
-        - DOI information
-        - important findings
-        - limitations where available
+        Search relevant academic literature using:
 
-        Do not invent papers or citations.
+        - OpenAlex
+        - Crossref
+        - arXiv
+
+        Identify:
+
+        - Relevant papers
+        - Authors
+        - Publication years
+        - DOI information
+        - Important findings
+        - Research limitations where available
+
+        Do not invent papers, authors, findings or citations.
         """,
         expected_output="""
-        Academic research report containing:
+        An academic research report containing:
+
         - Important papers
         - Authors
-        - Years
-        - DOI links
+        - Publication years
+        - DOI information
         - Main findings
         - Research limitations
+        - Relevant URLs where available
         """,
         agent=academic_researcher,
         context=[planning_task],
     )
+
+    # ============================================================
+    # TASK 4: EVIDENCE ANALYSIS
+    # ============================================================
 
     evidence_task = Task(
         description="""
         Act as the evidence verification layer.
 
         Research question:
+
         {research_question}
 
-        Review:
+        Review the research outputs provided through your task context.
 
-        PLANNING:
-        {planning_task}
-
-        WEB RESEARCH:
-        {web_task}
-
-        ACADEMIC RESEARCH:
-        {academic_task}
+        Carefully evaluate the collected evidence.
 
         Identify:
+
         1. Strongly supported findings.
-        2. Findings supported by multiple sources.
+        2. Findings supported by multiple independent sources.
         3. Claims that require caution.
-        4. Contradictions.
+        4. Contradictions between sources.
         5. Missing evidence.
-        6. Sources that appear weak or unreliable.
+        6. Weak or unreliable sources.
+        7. Areas where the evidence is still uncertain.
 
         Use the webpage fetch tool when source inspection is necessary.
 
         Do not create new unsupported facts.
+
+        Your job is to challenge the research rather than simply
+        accepting everything the previous agents reported.
         """,
         expected_output="""
-        Evidence assessment containing:
+        An evidence assessment containing:
+
         - Verified findings
         - Strong evidence
+        - Multiple-source evidence
         - Conflicting evidence
         - Weak or unsupported claims
         - Missing evidence
+        - Important uncertainties
         - Recommendations for the final writer
         """,
         agent=evidence_agent,
@@ -155,38 +182,34 @@ def create_tasks(
         ],
     )
 
+    # ============================================================
+    # TASK 5: FINAL RESEARCH REPORT
+    # ============================================================
+
     writing_task = Task(
         description="""
-        Produce the final research report.
+        Produce the final research report for:
 
-        Research question:
         {research_question}
 
-        Use the following material:
+        Use all research and evidence-analysis outputs provided
+        through your task context.
 
-        RESEARCH PLAN:
-        {planning_task}
+        Synthesize the evidence rather than simply repeating
+        individual researchers.
 
-        WEB RESEARCH:
-        {web_task}
+        Before finalizing:
 
-        ACADEMIC RESEARCH:
-        {academic_task}
-
-        EVIDENCE REVIEW:
-        {evidence_task}
-
-        Write a professional research report.
-
-        Before finalizing, use your source-inspection tool where useful.
-
-        Rules:
+        - Check important source URLs.
         - Do not invent citations.
         - Do not invent URLs.
         - Do not present uncertain claims as established facts.
-        - Prefer evidence supported by multiple sources.
-        - Keep academic references clearly identifiable.
-        - Include source URLs.
+        - Prefer findings supported by multiple sources.
+        - Clearly distinguish academic evidence from general web sources.
+        - Clearly identify conflicting evidence.
+        - Clearly identify limitations.
+
+        Write a professional, readable research report.
         """,
         expected_output="""
         A polished research report containing:
@@ -205,8 +228,8 @@ def create_tasks(
 
         # Sources
 
-        The Sources section must include the URLs supplied by the
-        research process.
+        The Sources section must contain the actual URLs
+        discovered during the research process.
         """,
         agent=writer,
         context=[
